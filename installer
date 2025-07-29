@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Requires that tte + tzupdate is already installed
+
+abort() {
+  echo "Aborted installation"
+  exit 1
+}
+
+step() {
+  clear
+  tte -i logo.txt --frame-rate 240 highlight
+  echo
+  echo "$1" | tte --frame-rate 640 wipe
+  echo
+}
+
+form() {
+  step "Let's setup your machine..."
+
+  while true; do
+    user_name=$(gum input --placeholder "Must be alphanumeric without spaces (like dhh)" --prompt.foreground="#845DF9" --prompt "User name> ") || abort
+
+    if [[ "$user_name" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
+      break
+    else
+      gum spin -s "globe" --title "User name must be alphanumeric with no spaces" -- sleep 1
+    fi
+  done
+
+  while true; do
+    password=$(gum input --placeholder "Used for user + root + encryption" --prompt.foreground="#845DF9" --password --prompt "Password> ") || abort
+    password_confirmation=$(gum input --placeholder "Must match the password you just typed" --prompt.foreground="#845DF9" --password --prompt "Confirm> ") || abort
+
+    if [[ "$password" == "$password_confirmation" ]]; then
+      break
+    else
+      gum spin -s "globe" --title "Passwords didn't match!" -- sleep 1
+    fi
+  done
+
+  full_name=$(gum input --placeholder "Your full name (like David Heinemeier Hansson)" --prompt.foreground="#845DF9" --prompt "Full name> ") || abort
+  email_address=$(gum input --placeholder "Your email address" --prompt.foreground="#845DF9" --prompt "Email address> ") || abort
+  hostname=$(gum input --placeholder "Your computer's address (like dhh-ser9)" --prompt.foreground="#845DF9" --prompt "Hostname> ") || abort
+  timezone=$(timedatectl list-timezones | gum choose --height 1 --selected=$(tzupdate -p) --header "Timezone") || abort
+  locale=$(sed 's/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US.UTF-8 --header "Locale") || abort
+}
+
+form
+
+while true; do
+  echo -e "User name: $user_name\nPassword: $(printf "%${#password}s" | tr ' ' '*')\nFull name: $full_name\nEmail address: $email_address\nHostname: $hostname\nTimezone: $timezone\nLocale: $locale"
+
+  echo
+  if gum confirm --negative "No, change it" "Does this look right?"; then
+    break
+  else
+    form
+  fi
+done
+
+step "Select the drive..."
+
+disk=$(lsblk -dpno NAME,SIZE,TYPE | grep -E '/dev/(sd|hd|vd|nvme|mmcblk)' | awk '{print $1, $2}' | gum choose --header "Select install disk")
+
+if [[ -z "$disk" ]]; then
+  echo "No disk selected. Exiting."
+  exit 1
+fi
