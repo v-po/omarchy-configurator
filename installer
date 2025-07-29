@@ -9,17 +9,70 @@ abort() {
 
 step() {
   clear
-  tte -i logo.txt --frame-rate 240 highlight
+  tte -i logo.txt --frame-rate 240 ${2:-highlight}
   echo
-  echo "$1" | tte --frame-rate 640 wipe
+  echo "$1" | tte --frame-rate 920 wipe
   echo
 }
 
-form() {
+// STEP 1: NETWORK
+
+step "Let's connect to network..."
+
+if [[ "$1" != "dry" ]] && ip link show | grep -q 'state UP' && ping -c1 archlinux.org &>/dev/null; then
+  echo -e "Ethernet connection detected and working.\n"
+else
+  echo "Detecting Wi-Fi networks..."
+  wifi_interfaces=$(iw dev | awk '$1=="Interface" {print $2}')
+  wifi_count=$(echo "$wifi_interfaces" | wc -l)
+
+  if [[ $wifi_count -eq 1 ]]; then
+    wifi_iface="$wifi_interfaces"
+  else
+    wifi_iface=$(echo "$wifi_interfaces" | gum choose --header "Select Wi-Fi interface")
+  fi
+
+  if [[ -z "$wifi_iface" ]]; then
+    echo "No Wi-Fi interface selected. Exiting."
+    exit 1
+  fi
+
+  # List available networks
+  networks=$(nmcli -t -f SSID dev wifi list ifname "$wifi_iface" | grep -v '^$' | sort | uniq)
+  ssid=$(echo "$networks" | gum choose --header "Select Wi-Fi network")
+
+  if [[ -z "$ssid" ]]; then
+    echo "No Wi-Fi network selected. Exiting."
+    exit 1
+  fi
+
+  # Check if the network is open (no security)
+  security=$(nmcli -t -f SSID,SECURITY dev wifi list ifname "$wifi_iface" | grep "^$ssid:" | cut -d: -f2)
+
+  if [[ "$security" == "--" || -z "$security" ]]; then
+    # Open network - connect without password
+    nmcli dev wifi connect "$ssid" ifname "$wifi_iface"
+  else
+    # Secured network - ask for password
+    wifi_pass=$(gum input --password --placeholder "Enter Wi-Fi password for $ssid")
+    nmcli dev wifi connect "$ssid" password "$wifi_pass" ifname "$wifi_iface"
+  fi
+
+  if ! ping -c1 archlinux.org &>/dev/null; then
+    echo "Wi-Fi connection failed. Exiting."
+    exit 1
+  fi
+
+  echo -e "Wi-Fi connection established.\n"
+fi
+
+// STEP 2: USER
+
+user_form() {
   step "Let's setup your machine..."
 
   while true; do
-    user_name=$(gum input --placeholder "Must be alphanumeric without spaces (like dhh)" --prompt.foreground="#845DF9" --prompt "User name> ") || abort
+    user_name=$(gum input --placeholder "Alphanumeric without spaces (like dhh)" --prompt.foreground="#845DF9" --prompt "User name> ") || abort
 
     if [[ "$user_name" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
       break
@@ -39,31 +92,67 @@ form() {
     fi
   done
 
-  full_name=$(gum input --placeholder "Your full name (like David Heinemeier Hansson)" --prompt.foreground="#845DF9" --prompt "Full name> ") || abort
-  email_address=$(gum input --placeholder "Your email address" --prompt.foreground="#845DF9" --prompt "Email address> ") || abort
-  hostname=$(gum input --placeholder "Your computer's address (like dhh-ser9)" --prompt.foreground="#845DF9" --prompt "Hostname> ") || abort
+  full_name=$(gum input --placeholder "Used for git authentication (hit return to skip)" --prompt.foreground="#845DF9" --prompt "Full name> ")
+  email_address=$(gum input --placeholder "Used for git authentication (hit return to skip)" --prompt.foreground="#845DF9" --prompt "Email address> ")
+
+  while true; do
+    hostname=$(gum input --placeholder "Alphanumeric without spaces (or return for 'omarchy')" --prompt.foreground="#845DF9" --prompt "Hostname> ")
+
+    if [[ "$hostname" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
+      break
+    else
+      hostname="omarchy"
+      break
+    fi
+  done
+
   timezone=$(timedatectl list-timezones | gum choose --height 1 --selected=$(tzupdate -p) --header "Timezone") || abort
   locale=$(sed 's/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US.UTF-8 --header "Locale") || abort
 }
 
-form
+user_form
 
 while true; do
-  echo -e "User name: $user_name\nPassword: $(printf "%${#password}s" | tr ' ' '*')\nFull name: $full_name\nEmail address: $email_address\nHostname: $hostname\nTimezone: $timezone\nLocale: $locale"
+  echo -e "Field,Value\nUser name,$user_name\nPassword,$(printf "%${#password}s" | tr ' ' '*')\nFull name,${full_name:-[Skipped]}\nEmail address,${email_address:-[Skipped]}\nHostname,$hostname\nTimezone,$timezone\nLocale,$locale" | gum table -s "," -p
 
   echo
   if gum confirm --negative "No, change it" "Does this look right?"; then
     break
   else
-    form
+    user_form
   fi
 done
 
-step "Select the drive..."
+// STEP 3: DISK
 
-disk=$(lsblk -dpno NAME,SIZE,TYPE | grep -E '/dev/(sd|hd|vd|nvme|mmcblk)' | awk '{print $1, $2}' | gum choose --header "Select install disk")
+disk_form() {
+  step "Let's select where to install Omarchy..." slide
 
-if [[ -z "$disk" ]]; then
-  echo "No disk selected. Exiting."
-  exit 1
-fi
+  disk=$(lsblk -dpno NAME,SIZE,TYPE | grep -E '/dev/(sd|hd|vd|nvme|mmcblk)' | awk '{print $1, $2}' | gum choose --header "Select install disk") || abort
+  disk=$(echo "$disk" | awk '{print $1}')
+}
+
+disk_form
+
+while true; do
+  echo -e "Everything will be overwritten. There is no recovery possible."
+
+  echo
+  if gum confirm --affirmative "Yes, format disk" --negative "No, change it" "Confirm overwriting ${disk}"; then
+    break
+  else
+    disk_form
+  fi
+done
+
+cat <<EOJ
+{
+  "user_name": "$user_name",
+  "password": "$password",
+  "full_name": "$full_name",
+  "email_address": "$email_address",
+  "timezone": "$timezone",
+  "locale": "$locale",
+  "disk": "$disk"
+}
+EOJ
