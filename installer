@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# Requires that tte + tzupdate is already installed
+# Install prerequisites
+if ! command -v gum >/dev/null || ! command -v iwctl >/dev/null || ! command -v tte >/dev/null || ! command -v tzupdate >/dev/null; then
+  sudo pacman -S --noconfirm --needed gum iw tte tzupdate
+fi
 
 abort() {
   echo "Aborted installation"
@@ -9,64 +12,56 @@ abort() {
 
 step() {
   clear
-  tte -i logo.txt --frame-rate 240 ${2:-highlight}
+  tte -i logo.txt --frame-rate ${3:-240} ${2:-highlight}
   echo
   echo "$1" | tte --frame-rate 920 wipe
   echo
 }
 
-// STEP 1: NETWORK
+clear_step() {
+  clear
+  cat logo.txt
+  echo
+}
 
-step "Let's connect to network..."
+# STEP 1: NETWORK
 
-if [[ "$1" != "dry" ]] && ip link show | grep -q 'state UP' && ping -c1 archlinux.org &>/dev/null; then
-  echo -e "Ethernet connection detected and working.\n"
-else
-  echo "Detecting Wi-Fi networks..."
-  wifi_interfaces=$(iw dev | awk '$1=="Interface" {print $2}')
+if true || ! (ping -c1 archlinux.org &>/dev/null); then
+  step "Detecting Wi-Fi networks..." slice
+
+  # Get list of interfaces managed by iwd
+  wifi_interfaces=$(iwctl device list | sed -r "s/\x1B\[[0-9;]*[mK]//g" | awk '$NF=="station" {print $1}')
   wifi_count=$(echo "$wifi_interfaces" | wc -l)
 
-  if [[ $wifi_count -eq 1 ]]; then
+  if [[ $wifi_count -eq 0 ]]; then
+    echo "No Wi-Fi interfaces found."
+    abort
+  elif [[ $wifi_count -eq 1 ]]; then
     wifi_iface="$wifi_interfaces"
   else
-    wifi_iface=$(echo "$wifi_interfaces" | gum choose --header "Select Wi-Fi interface")
+    wifi_iface=$(echo "$wifi_interfaces" | gum choose --header "Select Wi-Fi interface") || abort
   fi
 
-  if [[ -z "$wifi_iface" ]]; then
-    echo "No Wi-Fi interface selected. Exiting."
-    exit 1
-  fi
+  # Scan for networks
+  iwctl station "$wifi_iface" scan
+  sleep 1
 
-  # List available networks
-  networks=$(nmcli -t -f SSID dev wifi list ifname "$wifi_iface" | grep -v '^$' | sort | uniq)
-  ssid=$(echo "$networks" | gum choose --header "Select Wi-Fi network")
+  while true; do
+    networks=$(iwctl station "$wifi_iface" get-networks | sed 's/\x1B\[[0-9;]*[A-Za-z]//g' | awk 'NR>4 && NF {print $1}')
+    ssid=$(echo "$networks" | gum choose --header "Select Wi-Fi network") || abort
 
-  if [[ -z "$ssid" ]]; then
-    echo "No Wi-Fi network selected. Exiting."
-    exit 1
-  fi
-
-  # Check if the network is open (no security)
-  security=$(nmcli -t -f SSID,SECURITY dev wifi list ifname "$wifi_iface" | grep "^$ssid:" | cut -d: -f2)
-
-  if [[ "$security" == "--" || -z "$security" ]]; then
-    # Open network - connect without password
-    nmcli dev wifi connect "$ssid" ifname "$wifi_iface"
-  else
-    # Secured network - ask for password
-    wifi_pass=$(gum input --password --placeholder "Enter Wi-Fi password for $ssid")
-    nmcli dev wifi connect "$ssid" password "$wifi_pass" ifname "$wifi_iface"
-  fi
-
-  if ! ping -c1 archlinux.org &>/dev/null; then
-    echo "Wi-Fi connection failed. Exiting."
-    exit 1
-  fi
-
-  echo -e "Wi-Fi connection established.\n"
+    # Connect (iwd prompts for password if needed)
+    if iwctl station "$wifi_iface" connect "$ssid" && ping -c1 archlinux.org &>/dev/null; then
+      gum spin --spinner "globe" --title "Wi-Fi connection established." -- sleep 2
+      break
+    else
+      gum spin --spinner "globe" --title "Bad password (or other connection error)" -- sleep 1
+      clear_step
+    fi
+  done
 fi
 
-// STEP 2: USER
+# STEP 2: USER
 
 user_form() {
   step "Let's setup your machine..."
@@ -123,7 +118,7 @@ while true; do
   fi
 done
 
-// STEP 3: DISK
+# STEP 3: DISK
 
 disk_form() {
   step "Let's select where to install Omarchy..." slide
@@ -144,6 +139,8 @@ while true; do
     disk_form
   fi
 done
+
+clear
 
 cat <<EOJ
 {
