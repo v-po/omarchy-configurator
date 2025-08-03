@@ -26,7 +26,7 @@ clear_step() {
 
 # STEP 1: NETWORK
 
-if true || ! (ping -c1 archlinux.org &>/dev/null); then
+if ! (ping -c1 archlinux.org &>/dev/null); then
   step "Detecting Wi-Fi networks..." slice
 
   # Get list of interfaces managed by iwd
