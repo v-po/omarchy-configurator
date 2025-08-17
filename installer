@@ -91,6 +91,9 @@ user_form() {
     fi
   done
 
+  # Hash the password using yescrypt
+  password_hash=$(openssl passwd -6 "$password")
+
   full_name=$(gum input --placeholder "Used for git authentication (hit return to skip)" --prompt.foreground="#845DF9" --prompt "Full name> ")
   email_address=$(gum input --placeholder "Used for git authentication (hit return to skip)" --prompt.foreground="#845DF9" --prompt "Email address> ")
 
@@ -106,7 +109,11 @@ user_form() {
   done
 
   timezone=$(timedatectl list-timezones | gum choose --height 1 --selected=$(tzupdate -p) --header "Timezone") || abort
-  locale=$(sed 's/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US.UTF-8 --header "Locale") || abort
+  locale_full=$(sed 's/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US.UTF-8 --header "Locale") || abort
+
+  # Split locale into separate variables
+  locale=$(echo "$locale_full" | cut -d'.' -f1)
+  encoding=$(echo "$locale_full" | cut -d'.' -f2)
 }
 
 user_form
@@ -129,6 +136,10 @@ disk_form() {
 
   disk=$(lsblk -dpno NAME,SIZE,TYPE | grep -E '/dev/(sd|hd|vd|nvme|mmcblk)' | awk '{print $1, $2}' | gum choose --header "Select install disk") || abort
   disk=$(echo "$disk" | awk '{print $1}')
+
+  disk_size=$(lsblk -bdno SIZE "$disk")
+  # 2GiB boot + 1MiB Start Offset + 1MiB reserve for GPT backup
+  main_partition_size=$((disk_size - 2148532224 - 1048576))
 }
 
 disk_form
@@ -144,16 +155,325 @@ while true; do
   fi
 done
 
+disk_size=$(lsblk -bdno SIZE "$disk")
+main_partition_size=$((disk_size - 2148532224))
+
 clear
 
-cat <<EOJ
+cat <<-_EOF_ | tee user_credentials.json
 {
-  "user_name": "$user_name",
-  "password": "$password",
-  "full_name": "$full_name",
-  "email_address": "$email_address",
-  "timezone": "$timezone",
-  "locale": "$locale",
-  "disk": "$disk"
+    "encryption_password": "$password",
+    "root_enc_password": "$password_hash",
+    "users": [
+        {
+            "enc_password": "$password_hash",
+            "groups": [],
+            "sudo": true,
+            "username": "$user_name"
+        }
+    ]
 }
-EOJ
+_EOF_
+
+cat <<-_EOF_ | tee user_configuration.json
+{
+    "app_config": null,
+    "archinstall-language": "English",
+    "auth_config": {},
+    "audio_config": {
+        "audio": "pipewire"
+    },
+    "bootloader": "Limine",
+    "custom_commands": [],
+    "disk_config": {
+        "btrfs_options": {
+            "snapshot_config": {
+                "type": "Snapper"
+            }
+        },
+        "config_type": "default_layout",
+        "device_modifications": [
+            {
+                "device": "$disk",
+                "partitions": [
+                    {
+                        "btrfs": [],
+                        "dev_path": null,
+                        "flags": [
+                            "boot",
+                            "esp"
+                        ],
+                        "fs_type": "fat32",
+                        "mount_options": [],
+                        "mountpoint": "/boot",
+                        "obj_id": "ea21d3f2-82bb-49cc-ab5d-6f81ae94e18d",
+                        "size": {
+                            "sector_size": {
+                                "unit": "B",
+                                "value": 512
+                            },
+                            "unit": "GiB",
+                            "value": 2
+                        },
+                        "start": {
+                            "sector_size": {
+                                "unit": "B",
+                                "value": 512
+                            },
+                            "unit": "MiB",
+                            "value": 1
+                        },
+                        "status": "create",
+                        "type": "primary"
+                    },
+                    {
+                        "btrfs": [
+                            {
+                                "mountpoint": "/",
+                                "name": "@"
+                            },
+                            {
+                                "mountpoint": "/home",
+                                "name": "@home"
+                            },
+                            {
+                                "mountpoint": "/var/log",
+                                "name": "@log"
+                            },
+                            {
+                                "mountpoint": "/var/cache/pacman/pkg",
+                                "name": "@pkg"
+                            }
+                        ],
+                        "dev_path": null,
+                        "flags": [],
+                        "fs_type": "btrfs",
+                        "mount_options": [
+                            "compress=zstd"
+                        ],
+                        "mountpoint": null,
+                        "obj_id": "8c2c2b92-1070-455d-b76a-56263bab24aa",
+                        "size": {
+                            "sector_size": {
+                                "unit": "B",
+                                "value": 512
+                            },
+                            "unit": "B",
+                            "value": ${main_partition_size}
+                        },
+                        "start": {
+                            "sector_size": {
+                                "unit": "B",
+                                "value": 512
+                            },
+                            "unit": "B",
+                            "value": 2148532224
+                        },
+                        "status": "create",
+                        "type": "primary"
+                    }
+                ],
+                "wipe": true
+            }
+        ],
+        "disk_encryption": {
+            "encryption_type": "luks",
+            "lvm_volumes": [],
+            "partitions": [
+                "8c2c2b92-1070-455d-b76a-56263bab24aa"
+            ],
+            "encryption_password": "$password"
+        }
+    },
+    "hostname": "$hostname",
+    "kernels": [
+        "linux"
+    ],
+    "locale_config": {
+        "kb_layout": "$locale",
+        "sys_enc": "$encoding",
+        "sys_lang": "en_US.UTF-8"
+    },
+    "mirror_config": {
+        "custom_repositories": [],
+        "custom_servers": [{"url": "https://geo.mirror.pkgbuild.com/"}],
+        "mirror_regions": {},
+        "optional_repositories": []
+    },
+    "network_config": {
+        "type": "iso"
+    },
+    "ntp": true,
+    "packages": [
+        "gum",
+        "base-devel",
+        "1password-beta",
+        "1password-cli",
+        "alacritty",
+        "base",
+        "base-devel",
+        "bash-completion",
+        "bat",
+        "blueberry",
+        "brightnessctl",
+        "btop",
+        "btrfs-progs",
+        "chromium",
+        "clang",
+        "cups",
+        "cups-browsed",
+        "cups-filters",
+        "cups-pdf",
+        "docker",
+        "docker-buildx",
+        "docker-compose",
+        "evince",
+        "eza",
+        "fastfetch",
+        "fcitx5",
+        "fcitx5-gtk",
+        "fcitx5-qt",
+        "fd",
+        "ffmpegthumbnailer",
+        "fzf",
+        "gcc14",
+        "git",
+        "github-cli",
+        "gnome-calculator",
+        "gnome-keyring",
+        "gnome-themes-extra",
+        "grub",
+        "gst-plugin-pipewire",
+        "gum",
+        "gvfs-mtp",
+        "hypridle",
+        "hyprland",
+        "hyprland-qtutils",
+        "hyprlock",
+        "hyprpicker",
+        "hyprshot",
+        "hyprsunset",
+        "imagemagick",
+        "impala",
+        "imv",
+        "inetutils",
+        "iwd",
+        "jq",
+        "kdenlive",
+        "kvantum-qt5",
+        "lazydocker",
+        "lazygit",
+        "less",
+        "libpulse",
+        "libqalculate",
+        "libreoffice-fresh",
+        "linux",
+        "linux-firmware",
+        "llvm",
+        "localsend",
+        "luarocks",
+        "mako",
+        "man-db",
+        "mariadb-libs",
+        "mise",
+        "mpv",
+        "nautilus",
+        "neovim",
+        "noto-fonts",
+        "noto-fonts-cjk",
+        "noto-fonts-emoji",
+        "noto-fonts-extra",
+        "nss-mdns",
+        "obs-studio",
+        "obsidian",
+        "pamixer",
+        "# pinta",
+        "pipewire",
+        "pipewire-alsa",
+        "pipewire-jack",
+        "pipewire-pulse",
+        "playerctl",
+        "plocate",
+        "plymouth",
+        "polkit-gnome",
+        "postgresql-libs",
+        "power-profiles-daemon",
+        "python-terminaltexteffects",
+        "ripgrep",
+        "satty",
+        "signal-desktop",
+        "slurp",
+        "spotify",
+        "sushi",
+        "swaybg",
+        "swayosd",
+        "system-config-printer",
+        "tldr",
+        "tree-sitter-cli",
+        "ttf-cascadia-mono-nerd",
+        "ttf-ia-writer",
+        "ttf-jetbrains-mono",
+        "typora",
+        "tzupdate",
+        "ufw",
+        "ufw-docker",
+        "unzip",
+        "uwsm",
+        "walker",
+        "waybar",
+        "wget",
+        "whois",
+        "wiremix",
+        "wireplumber",
+        "wl-clip-persist",
+        "wl-clipboard",
+        "wl-screenrec",
+        "woff2-font-awesome",
+        "xdg-desktop-portal-gtk",
+        "xdg-desktop-portal-hyprland",
+        "xmlstarlet",
+        "xournalpp",
+        "yaru-icon-theme",
+        "yay",
+        "yay-debug",
+        "zoom",
+        "zoxide",
+        "zram-generator",
+        "webp-pixbuf-loader",
+        "autoconf-archive",
+        "intltool",
+        "gtk4-layer-shell",
+        "sassc",
+        "libsass",
+        "dart",
+        "qt5-remoteobjects",
+        "dust",
+        "starship",
+        "limine",
+        "limine-mkinitcpio-hook",
+        "limine-snapper-sync",
+        "snapper"
+    ],
+    "parallel_downloads": 0,
+    "profile_config": {
+        "gfx_driver": null,
+        "greeter": null,
+        "profile": {}
+    },
+    "script": null,
+    "services": [],
+    "swap": true,
+    "timezone": "$timezone",
+    "version": "3.0.9"
+}
+_EOF_
+
+# cat <<EOJ
+# {
+#   "user_name": "$user_name",
+#   "password_hash": "$password_hash",
+#   "full_name": "$full_name",
+#   "email_address": "$email_address",
+#   "disk": "$disk"
+# }
+# EOJ
