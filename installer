@@ -155,7 +155,7 @@ while true; do
   fi
 done
 
-clear
+clear_step
 
 cat <<-_EOF_ | tee user_credentials.json >/dev/null
 {
