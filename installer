@@ -108,7 +108,7 @@ user_form() {
     fi
   done
 
-  timezone=$(timedatectl list-timezones | gum choose --height 1 --selected=$(tzupdate -p) --header "Timezone") || abort
+  timezone=$(timedatectl list-timezones | gum choose --height 1 --header "Timezone") || abort
   locale_full=$(sed 's/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US.UTF-8 --header "Locale") || abort
 
   # Split locale into separate variables
