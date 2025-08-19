@@ -155,9 +155,6 @@ while true; do
   fi
 done
 
-disk_size=$(lsblk -bdno SIZE "$disk")
-main_partition_size=$((disk_size - 2148532224))
-
 clear
 
 cat <<-_EOF_ | tee user_credentials.json
