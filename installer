@@ -467,13 +467,3 @@ cat <<-_EOF_ | tee user_configuration.json
     "version": "3.0.9"
 }
 _EOF_
-
-# cat <<EOJ
-# {
-#   "user_name": "$user_name",
-#   "password_hash": "$password_hash",
-#   "full_name": "$full_name",
-#   "email_address": "$email_address",
-#   "disk": "$disk"
-# }
-# EOJ
