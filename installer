@@ -157,8 +157,8 @@ done
 
 clear_step
 
-echo "$full_name" >full_name.txt
-echo "$email_address" >email_address.txt
+echo "$full_name" >user_full_name.txt
+echo "$email_address" >user_email_address.txt
 
 cat <<-_EOF_ | tee user_credentials.json >/dev/null
 {
