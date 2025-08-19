@@ -155,7 +155,7 @@ while true; do
   fi
 done
 
-clear_step
+clear
 
 echo "$full_name" >user_full_name.txt
 echo "$email_address" >user_email_address.txt
