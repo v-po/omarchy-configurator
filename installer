@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install prerequisites
-if ! command -v gum >/dev/null || ! command -v iwctl >/dev/null || ! command -v tte >/dev/null || ! command -v tzupdate >/dev/null; then
-  sudo pacman -S --noconfirm --needed gum iw tte tzupdate
+if ! command -v gum >/dev/null || ! command -v iwctl >/dev/null || ! command -v tte >/dev/null; then
+  sudo pacman -S --noconfirm --needed gum iw tte
 fi
 
 abort() {
