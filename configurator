@@ -335,7 +335,7 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
         "wget",
         "base-devel"
     ],
-    "parallel_downloads": 0,
+    "parallel_downloads": 8,
     "profile_config": {
         "gfx_driver": null,
         "greeter": null,
