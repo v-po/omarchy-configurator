@@ -23,10 +23,9 @@ abort() {
 
 step() {
   clear
-  # tte -i <(echo "$OMARCHY_LOGO") --frame-rate ${3:-240} ${2:-highlight}
   echo -e "$OMARCHY_LOGO\n"
   echo
-  echo "$1" # | tte --frame-rate 920 wipe
+  echo "$1"
   echo
 }
 
