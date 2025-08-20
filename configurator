@@ -41,10 +41,10 @@ working_network() {
 
 # STEP 1: NETWORK (OPTIONAL WHEN RUNNING OFFLINE INSTALLATION)
 
-if [[ -n "$NETWORK_NEEDED" ]]; then
+if [[ -n $NETWORK_NEEDED || -n $WIFI_NEEDED ]]; then
   step "Detecting network..." slice
 
-  if [[ -n "$WIFI_NEEDED" ]] || ! working_network; then
+  if [[ -n $WIFI_NEEDED ]] || ! working_network; then
     # Get list of interfaces managed by iwd
     wifi_interfaces=$(iwctl device list | sed -r "s/\x1B\[[0-9;]*[mK]//g" | awk '$NF=="station" {print $1}')
     wifi_count=$(echo "$wifi_interfaces" | wc -l)
