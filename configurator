@@ -21,28 +21,31 @@ abort() {
   exit 1
 }
 
-step() {
+clear_logo() {
   clear
   echo -e "$OMARCHY_LOGO\n"
   echo
+}
+
+step() {
+  clear_logo
   echo "$1"
   echo
 }
 
-clear_step() {
-  clear
-  echo -e "$OMARCHY_LOGO\n"
-  echo
+working_network() {
+  sleep 2
+  ping -c3 1.1.1.1 &>/dev/null
 }
 
-working_network() {
-  ping -c3 1.1.1.1 &>/dev/null
+notice() {
+  gum spin --spinner "globe" --title "$1" -- sleep ${2:-2}
 }
 
 # STEP 1: NETWORK (OPTIONAL WHEN RUNNING OFFLINE INSTALLATION)
 
 if [[ -n $NETWORK_NEEDED || -n $WIFI_NEEDED ]]; then
-  step "Detecting network..." slice
+  step "Detecting network..."
 
   if [[ -n $WIFI_NEEDED ]] || ! working_network; then
     # Get list of interfaces managed by iwd
@@ -55,28 +58,27 @@ if [[ -n $NETWORK_NEEDED || -n $WIFI_NEEDED ]]; then
     elif [[ $wifi_count -eq 1 ]]; then
       wifi_iface="$wifi_interfaces"
     else
+      clear_logo
       wifi_iface=$(echo "$wifi_interfaces" | gum choose --header "Select Wi-Fi interface") || abort
     fi
 
     # Scan for networks
     iwctl station "$wifi_iface" scan
-    sleep 1
+    sleep 3
 
     while true; do
-      networks=$(iwctl station "$wifi_iface" get-networks | sed 's/\x1B\[[0-9;]*[A-Za-z]//g' | awk 'NR>4 && NF {print $1}')
-      ssid=$(echo "$networks" | gum choose --header "Select Wi-Fi network") || abort
+      networks=$(iwctl station "$wifi_iface" get-networks | sed 's/\x1B\[[0-9;]*[A-Za-z]//g' | awk 'NR>4 && NF {print $1}' | sed 's/>//g')
+      clear_logo
+      ssid=$(echo "$networks" | sort -u | gum choose --header "Select Wi-Fi network") || abort
+      echo "Connecting..."
 
       # Connect (iwd prompts for password if needed)
       if iwctl station "$wifi_iface" connect "$ssid" && working_network; then
-        gum spin --spinner "globe" --title "Wi-Fi connection established" -- sleep 2
         break
       else
-        gum spin --spinner "globe" --title "Bad password (or other connection error)" -- sleep 1
-        clear_step
+        notice "Bad password (or other connection error)", 1
       fi
     done
-  else
-    gum spin --spinner "globe" --title "Connection established" -- sleep 2
   fi
 fi
 
@@ -91,7 +93,7 @@ user_form() {
     if [[ "$user_name" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
       break
     else
-      gum spin -s "globe" --title "User name must be alphanumeric with no spaces" -- sleep 1
+      notice "User name must be alphanumeric with no spaces", 1
     fi
   done
 
@@ -102,7 +104,7 @@ user_form() {
     if [[ "$password" == "$password_confirmation" ]]; then
       break
     else
-      gum spin -s "globe" --title "Passwords didn't match!" -- sleep 1
+      notice "Passwords didn't match!", 1
     fi
   done
 
