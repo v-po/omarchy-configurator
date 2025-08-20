@@ -12,8 +12,8 @@ OMARCHY_LOGO='                 ▄▄▄
                                        ███   █▀                                  '
 
 # Install prerequisites
-if ! command -v gum >/dev/null || ! command -v iwctl >/dev/null || ! command -v tte >/dev/null; then
-  sudo pacman -S --noconfirm --needed gum iw tte
+if ! command -v gum >/dev/null || ! command -v iwctl >/dev/null; then
+  sudo pacman -Sy --noconfirm --needed gum iw
 fi
 
 abort() {
@@ -23,9 +23,10 @@ abort() {
 
 step() {
   clear
-  tte -i <(echo "$OMARCHY_LOGO") --frame-rate ${3:-240} ${2:-highlight}
+  # tte -i <(echo "$OMARCHY_LOGO") --frame-rate ${3:-240} ${2:-highlight}
+  echo -e "$OMARCHY_LOGO\n"
   echo
-  echo "$1" | tte --frame-rate 920 wipe
+  echo "$1" # | tte --frame-rate 920 wipe
   echo
 }
 
