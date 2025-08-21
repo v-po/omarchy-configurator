@@ -22,8 +22,8 @@ abort() {
 }
 
 working_network() {
-  sleep 2
-  ping -c3 -W1 1.1.1.1 | grep -q "bytes from"
+  sleep ${1:-3}
+  ping -c5 -W1 1.1.1.1 | grep -q "bytes from"
 }
 
 clear_logo() {
@@ -69,7 +69,7 @@ if [[ -z $NETWORK_NOT_NEEDED ]]; then
         ssid="$(echo "$networks" | gum choose --header "Select Wi-Fi network")" || abort
 
         step "Connecting to $ssid..."
-        if iwctl station "$wifi_interface" connect "$ssid" && working_network; then
+        if iwctl station "$wifi_interface" connect "$ssid" && working_network 5; then
           break
         else
           notice "Couldn't connect to network (bad password?)" 1
