@@ -156,21 +156,6 @@ disk_form() {
 
   disk=$(lsblk -dpno NAME,SIZE,TYPE | grep -E '/dev/(sd|hd|vd|nvme|mmcblk)' | awk '{print $1, $2}' | gum choose --header "Select install disk") || abort
   disk=$(echo "$disk" | awk '{print $1}')
-
-  disk_size=$(lsblk -bdno SIZE "$disk")
-  # 2GiB boot + 1MiB Start Offset + 1MiB reserve for GPT backup
-  main_partition_size=$((disk_size - 2148532224 - 1048576))
-
-  # Compute disk size in MiB
-  mib=1048576
-  disk_size_bytes=$(lsblk -bdno SIZE "$disk")
-  disk_size_mib=$((disk_size_bytes / mib)) # floor to whole MiB
-
-  # Reserve: 1 MiB (initial gap) + 2048 MiB (ESP) + 1 MiB (tail for GPT/backups)
-  reserved_mib=2050
-
-  # Main partition size in MiB
-  main_partition_size_mib=$((disk_size_mib - reserved_mib))
 }
 
 disk_form
@@ -188,14 +173,21 @@ done
 
 clear
 
+# Save user full name and email address, so the autostart can
+# set them as OMARCHY_USER_NAME and OMARCHY_USER_EMAIL
 echo "$full_name" >user_full_name.txt
 echo "$email_address" >user_email_address.txt
 
+# Select bootloader on whether UEFI is available or not
 if [[ -d /sys/firmware/efi/efivars ]]; then
   bootloader="systemd-boot"
 else
   bootloader="grub"
 fi
+
+# Partition size for the whole disk: 2GiB boot + 1MiB Start Offset + 1MiB reserve for GPT backup
+disk_size=$(lsblk -bdno SIZE "$disk")
+main_partition_size=$((disk_size - 2148532224 - 1048576))
 
 cat <<-_EOF_ | tee user_credentials.json >/dev/null
 {
@@ -241,8 +233,8 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "obj_id": "ea21d3f2-82bb-49cc-ab5d-6f81ae94e18d",
                         "size": {
                             "sector_size": { "unit": "B", "value": 512 },
-                            "unit": "GiB",
-                            "value": 2
+                            "unit": "MiB",
+                            "value": 2048
                         },
                         "start": {
                             "sector_size": { "unit": "B", "value": 512 },
@@ -265,16 +257,8 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "mount_options": [ "compress=zstd" ],
                         "mountpoint": null,
                         "obj_id": "8c2c2b92-1070-455d-b76a-56263bab24aa",
-                        "size": {
-                            "sector_size": { "unit": "B", "value": 512 },
-                            "unit": "MiB",
-                            "value": ${main_partition_size}
-                        },
-                        "start": {
-                            "sector_size": { "unit": "B", "value": 512 },
-                            "unit": "MiB",
-                            "value": 2049
-                        },
+                        "size": { "unit": "B", "value": ${main_partition_size} },
+                        "start": { "unit": "B", "value": 2148532224 },
                         "status": "create",
                         "type": "primary"
                     }
