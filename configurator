@@ -233,8 +233,8 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "obj_id": "ea21d3f2-82bb-49cc-ab5d-6f81ae94e18d",
                         "size": {
                             "sector_size": { "unit": "B", "value": 512 },
-                            "unit": "MiB",
-                            "value": 2048
+                            "unit": "GiB",
+                            "value": 2
                         },
                         "start": {
                             "sector_size": { "unit": "B", "value": 512 },
@@ -257,8 +257,16 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "mount_options": [ "compress=zstd" ],
                         "mountpoint": null,
                         "obj_id": "8c2c2b92-1070-455d-b76a-56263bab24aa",
-                        "size": { "unit": "B", "value": ${main_partition_size} },
-                        "start": { "unit": "B", "value": 2148532224 },
+                        "size": {
+                            "sector_size": { "unit": "B", "value": 512 },
+                            "unit": "B",
+                            "value": ${main_partition_size}
+                        },
+                        "start": {
+                            "sector_size": { "unit": "B", "value": 512 },
+                            "unit": "B",
+                            "value": 2148532224
+                        },
                         "status": "create",
                         "type": "primary"
                     }
