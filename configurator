@@ -122,11 +122,7 @@ user_form() {
   done
 
   timezone=$(timedatectl list-timezones | gum filter --height 10 --header "Timezone") || abort
-  locale_full=$(sed 's/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US.UTF-8 --header "Locale/keyboard") || abort
-
-  # Split locale into separate variables
-  locale=$(echo "$locale_full" | cut -d'.' -f1)
-  encoding=$(echo "$locale_full" | cut -d'.' -f2)
+  locale=$(sed '/[.@]/d; s/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US --header "Locale/keyboard") || abort
 
   # Set keyboard from locale
   case "$locale" in
@@ -319,7 +315,7 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
     ],
     "locale_config": {
         "kb_layout": "$keyboard",
-        "sys_enc": "$encoding",
+        "sys_enc": "UTF-8",
         "sys_lang": "en_US.UTF-8"
     },
     "mirror_config": {
