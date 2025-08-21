@@ -184,6 +184,12 @@ clear
 echo "$full_name" >user_full_name.txt
 echo "$email_address" >user_email_address.txt
 
+if [[ -d /sys/firmware/efi/efivars ]]; then
+  bootloader="systemd-boot"
+else
+  bootloader="grub"
+fi
+
 cat <<-_EOF_ | tee user_credentials.json >/dev/null
 {
     "encryption_password": "$password",
@@ -207,13 +213,11 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
     "audio_config": {
         "audio": "pipewire"
     },
-    "bootloader": "Limine",
+    "bootloader": "$bootloader",
     "custom_commands": [],
     "disk_config": {
         "btrfs_options": {
-            "snapshot_config": {
-                "type": "Snapper"
-            }
+            "snapshot_config": null
         },
         "config_type": "default_layout",
         "device_modifications": [
