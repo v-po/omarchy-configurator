@@ -22,7 +22,8 @@ abort() {
 }
 
 working_network() {
-  ping -c5 -W1 1.1.1.1 | grep -q "bytes from"
+  sleep 2
+  ping -c3 -W1 1.1.1.1 | grep -q "bytes from"
 }
 
 clear_logo() {
