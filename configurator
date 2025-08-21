@@ -209,15 +209,11 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
     "app_config": null,
     "archinstall-language": "English",
     "auth_config": {},
-    "audio_config": {
-        "audio": "pipewire"
-    },
+    "audio_config": { "audio": "pipewire" },
     "bootloader": "$bootloader",
     "custom_commands": [],
     "disk_config": {
-        "btrfs_options": {
-            "snapshot_config": null
-        },
+        "btrfs_options": { "snapshot_config": null },
         "config_type": "default_layout",
         "device_modifications": [
             {
@@ -277,16 +273,19 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
         "disk_encryption": {
             "encryption_type": "luks",
             "lvm_volumes": [],
-            "partitions": [
-                "8c2c2b92-1070-455d-b76a-56263bab24aa"
-            ],
+            "partitions": [ "8c2c2b92-1070-455d-b76a-56263bab24aa" ],
             "encryption_password": "$password"
         }
     },
     "hostname": "$hostname",
-    "kernels": [
-        "linux"
-    ],
+    "kernels": [ "linux" ],
+    "network_config": { "type": "iso" },
+    "ntp": true,
+    "parallel_downloads": 8,
+    "script": null,
+    "services": [],
+    "swap": true,
+    "timezone": "$timezone",
     "locale_config": {
         "kb_layout": "$keyboard",
         "sys_enc": "UTF-8",
@@ -298,25 +297,16 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
         "mirror_regions": {},
         "optional_repositories": []
     },
-    "network_config": {
-        "type": "iso"
-    },
-    "ntp": true,
     "packages": [
         "gum",
         "wget",
         "base-devel"
     ],
-    "parallel_downloads": 8,
     "profile_config": {
         "gfx_driver": null,
         "greeter": null,
         "profile": {}
     },
-    "script": null,
-    "services": [],
-    "swap": true,
-    "timezone": "$timezone",
     "version": "3.0.9"
 }
 _EOF_
