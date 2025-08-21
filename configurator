@@ -184,7 +184,7 @@ else
   bootloader="grub"
 fi
 
-# Partition size for the whole disk: 1GiB boot + 1MiB Start Offset + 1MiB reserve for GPT backup
+# Partition size for the whole disk: Disk size - 1GiB boot - 1MiB Start Offset - 1MiB reserve for GPT backup
 disk_size=$(lsblk -bdno SIZE "$disk")
 mib=$((1024 * 1024))
 gib=$((mib * 1024))
