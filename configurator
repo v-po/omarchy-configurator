@@ -45,7 +45,7 @@ notice() {
 
 # STEP 1: NETWORK (OPTIONAL WHEN RUNNING OFFLINE INSTALLATION)
 
-if [[ -n $NETWORK_NEEDED || -n $WIFI_NEEDED ]]; then
+if [[ -z $NETWORK_NOT_NEEDED ]]; then
   step "Detecting network..."
 
   if [[ -n $WIFI_NEEDED ]] || ! working_network; then
