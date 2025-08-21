@@ -186,9 +186,10 @@ fi
 
 # Partition size for the whole disk: 1GiB boot + 1MiB Start Offset + 1MiB reserve for GPT backup
 disk_size=$(lsblk -bdno SIZE "$disk")
-gib=1074790400
-magic_offset=1076584448
-main_partition_size=$((disk_size - magic_offset))
+mib=$((1024 * 1024))
+gib=$((mib * 1024))
+main_partition_start=$((gib + mib))
+main_partition_size=$((disk_size - main_partition_start))
 
 cat <<-_EOF_ | tee user_credentials.json >/dev/null
 {
@@ -262,7 +263,7 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "start": {
                             "sector_size": { "unit": "B", "value": 512 },
                             "unit": "B",
-                            "value": $gib
+                            "value": $main_partition_start
                         },
                         "status": "create",
                         "type": "primary"
