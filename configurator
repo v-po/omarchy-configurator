@@ -184,9 +184,13 @@ else
   bootloader="grub"
 fi
 
-# Partition size for the whole disk: 2GiB boot + 1MiB Start Offset + 1MiB reserve for GPT backup
+# Partition size for the whole disk: 1GiB boot + 1MiB Start Offset + 1MiB reserve for GPT backup
 disk_size=$(lsblk -bdno SIZE "$disk")
-main_partition_size=$((disk_size - 2148532224 - 1048576))
+# gib=1074790400
+# mib=1048576
+# disk_offset=2048
+magic_offset=1074790400
+main_partition_size=$((disk_size - magic_offset))
 
 cat <<-_EOF_ | tee user_credentials.json >/dev/null
 {
@@ -229,7 +233,7 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "size": {
                             "sector_size": { "unit": "B", "value": 512 },
                             "unit": "GiB",
-                            "value": 2
+                            "value": 1
                         },
                         "start": {
                             "sector_size": { "unit": "B", "value": 512 },
@@ -255,12 +259,12 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "size": {
                             "sector_size": { "unit": "B", "value": 512 },
                             "unit": "B",
-                            "value": ${main_partition_size}
+                            "value": $main_partition_size
                         },
                         "start": {
                             "sector_size": { "unit": "B", "value": 512 },
-                            "unit": "B",
-                            "value": 2148532224
+                            "unit": "GiB",
+                            "value": 1
                         },
                         "status": "create",
                         "type": "primary"
