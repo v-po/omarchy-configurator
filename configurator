@@ -232,12 +232,10 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "mountpoint": "/boot",
                         "obj_id": "ea21d3f2-82bb-49cc-ab5d-6f81ae94e18d",
                         "size": {
-                            "sector_size": { "unit": "B", "value": 512 },
                             "unit": "GiB",
                             "value": 2
                         },
                         "start": {
-                            "sector_size": { "unit": "B", "value": 512 },
                             "unit": "MiB",
                             "value": 1
                         },
