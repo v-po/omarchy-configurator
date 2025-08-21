@@ -160,6 +160,17 @@ disk_form() {
   disk_size=$(lsblk -bdno SIZE "$disk")
   # 2GiB boot + 1MiB Start Offset + 1MiB reserve for GPT backup
   main_partition_size=$((disk_size - 2148532224 - 1048576))
+
+  # Compute disk size in MiB
+  mib=1048576
+  disk_size_bytes=$(lsblk -bdno SIZE "$disk")
+  disk_size_mib=$((disk_size_bytes / mib)) # floor to whole MiB
+
+  # Reserve: 1 MiB (initial gap) + 2048 MiB (ESP) + 1 MiB (tail for GPT/backups)
+  reserved_mib=2050
+
+  # Main partition size in MiB
+  main_partition_size_mib=$((disk_size_mib - reserved_mib))
 }
 
 disk_form
@@ -223,27 +234,18 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                     {
                         "btrfs": [],
                         "dev_path": null,
-                        "flags": [
-                            "boot",
-                            "esp"
-                        ],
+                        "flags": [ "boot", "esp" ],
                         "fs_type": "fat32",
                         "mount_options": [],
                         "mountpoint": "/boot",
                         "obj_id": "ea21d3f2-82bb-49cc-ab5d-6f81ae94e18d",
                         "size": {
-                            "sector_size": {
-                                "unit": "B",
-                                "value": 512
-                            },
+                            "sector_size": { "unit": "B", "value": 512 },
                             "unit": "GiB",
                             "value": 2
                         },
                         "start": {
-                            "sector_size": {
-                                "unit": "B",
-                                "value": 512
-                            },
+                            "sector_size": { "unit": "B", "value": 512 },
                             "unit": "MiB",
                             "value": 1
                         },
@@ -252,46 +254,26 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                     },
                     {
                         "btrfs": [
-                            {
-                                "mountpoint": "/",
-                                "name": "@"
-                            },
-                            {
-                                "mountpoint": "/home",
-                                "name": "@home"
-                            },
-                            {
-                                "mountpoint": "/var/log",
-                                "name": "@log"
-                            },
-                            {
-                                "mountpoint": "/var/cache/pacman/pkg",
-                                "name": "@pkg"
-                            }
+                            { "mountpoint": "/", "name": "@" },
+                            { "mountpoint": "/home", "name": "@home" },
+                            { "mountpoint": "/var/log", "name": "@log" },
+                            { "mountpoint": "/var/cache/pacman/pkg", "name": "@pkg" }
                         ],
                         "dev_path": null,
                         "flags": [],
                         "fs_type": "btrfs",
-                        "mount_options": [
-                            "compress=zstd"
-                        ],
+                        "mount_options": [ "compress=zstd" ],
                         "mountpoint": null,
                         "obj_id": "8c2c2b92-1070-455d-b76a-56263bab24aa",
                         "size": {
-                            "sector_size": {
-                                "unit": "B",
-                                "value": 512
-                            },
-                            "unit": "B",
+                            "sector_size": { "unit": "B", "value": 512 },
+                            "unit": "MiB",
                             "value": ${main_partition_size}
                         },
                         "start": {
-                            "sector_size": {
-                                "unit": "B",
-                                "value": 512
-                            },
-                            "unit": "B",
-                            "value": 2148532224
+                            "sector_size": { "unit": "B", "value": 512 },
+                            "unit": "MiB",
+                            "value": 2049
                         },
                         "status": "create",
                         "type": "primary"
