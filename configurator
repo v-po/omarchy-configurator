@@ -60,10 +60,10 @@ if [[ -n $NETWORK_NEEDED || -n $WIFI_NEEDED ]]; then
       wifi_interface=$(echo "$wifi_interfaces" | gum choose --header "Select Wi-Fi interface") || abort
     fi
 
-    while true; do
-      step "Scanning Wi-Fi..."
-      networks=$(sudo iw dev "$wifi_interface" scan | sed -n 's/^[[:space:]]*SSID: //p' | sed '/^$/d' | sort -u)
+    step "Scanning Wi-Fi..."
+    networks=$(sudo iw dev "$wifi_interface" scan | sed -n 's/^[[:space:]]*SSID: //p' | sed '/^$/d' | sort -u)
 
+    while true; do
       clear_logo
       ssid="$(echo "$networks" | gum choose --header "Select Wi-Fi network")" || abort
 
