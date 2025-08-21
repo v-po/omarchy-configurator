@@ -61,19 +61,21 @@ if [[ -n $NETWORK_NEEDED || -n $WIFI_NEEDED ]]; then
     fi
 
     step "Scanning Wi-Fi..."
-    networks=$(sudo iw dev "$wifi_interface" scan | sed -n 's/^[[:space:]]*SSID: //p' | sed '/^$/d' | sort -u)
+    if networks=$(timeout 7s sudo iw dev "$wifi_interface" scan | sed -n 's/^[[:space:]]*SSID: //p' | sed '/^$/d' | sort -u); then
+      while true; do
+        clear_logo
+        ssid="$(echo "$networks" | gum choose --header "Select Wi-Fi network")" || abort
 
-    while true; do
-      clear_logo
-      ssid="$(echo "$networks" | gum choose --header "Select Wi-Fi network")" || abort
-
-      step "Connecting to $ssid..."
-      if iwctl station "$wifi_interface" connect "$ssid" && working_network; then
-        break
-      else
-        notice "Couldn't connect to network (bad password?)" 1
-      fi
-    done
+        step "Connecting to $ssid..."
+        if iwctl station "$wifi_interface" connect "$ssid" && working_network; then
+          break
+        else
+          notice "Couldn't connect to network (bad password?)" 1
+        fi
+      done
+    else
+      notice "Couldn't find any Wi-Fi networks." 1
+    fi
   fi
 fi
 
