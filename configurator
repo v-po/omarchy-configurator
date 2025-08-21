@@ -188,8 +188,9 @@ fi
 disk_size=$(lsblk -bdno SIZE "$disk")
 mib=$((1024 * 1024))
 gib=$((mib * 1024))
+disk_size_in_mib=$((disk_size / mib * mib))
 main_partition_start=$((gib + mib))
-main_partition_size=$((disk_size - main_partition_start - mib))
+main_partition_size=$((disk_size_in_mib - main_partition_start - mib))
 
 cat <<-_EOF_ | tee user_credentials.json >/dev/null
 {
