@@ -217,7 +217,11 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
     "bootloader": "Limine",
     "custom_commands": [],
     "disk_config": {
-        "btrfs_options": { "snapshot_config": null },
+        "btrfs_options": { 
+          "snapshot_config": {
+            "type": "Snapper"
+          }
+        },
         "config_type": "default_layout",
         "device_modifications": [
             {
