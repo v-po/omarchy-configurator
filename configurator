@@ -129,8 +129,12 @@ user_form() {
   done
 
   # Pick timezone
-  geo_guessed_timezone=$(tzupdate -p)
-  timezone=$(timedatectl list-timezones | gum choose --height 10 --selected "$geo_guessed_timezone" --header "Timezone") || abort
+  if command -v tzupdate >/dev/null; then
+    geo_guessed_timezone=$(tzupdate -p)
+    timezone=$(timedatectl list-timezones | gum choose --height 10 --selected "$geo_guessed_timezone" --header "Timezone") || abort
+  else
+    timezone=$(timedatectl list-timezones | gum filter --height 10 --header "Timezone") || abort
+  fi
 
   # Pick keyboard layout
   keyboards=$(awk '
