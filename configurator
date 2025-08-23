@@ -313,8 +313,6 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
         "optional_repositories": []
     },
     "packages": [
-        "gum",
-        "wget",
         "base-devel"
     ],
     "profile_config": {
