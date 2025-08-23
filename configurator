@@ -16,6 +16,10 @@ if ! command -v gum >/dev/null || ! command -v iwctl >/dev/null; then
   sudo pacman -Sy --noconfirm --needed gum iw
 fi
 
+if ! command -v tzupdate >/dev/null; then
+  yay -Sy --noconfirm tzupdate
+fi
+
 abort() {
   echo "${1:-Aborted installation}"
   exit 1
@@ -124,7 +128,6 @@ user_form() {
     fi
   done
 
-  timezone=$(timedatectl list-timezones | gum filter --height 10 --header "Timezone") || abort
   locale=$(sed '/[.@]/d; s/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US --header "Locale/keyboard") || abort
 
   # Set keyboard from locale
@@ -137,6 +140,10 @@ user_form() {
   no_*) keyboard="no" ;;
   *) keyboard=$(printf '%s' "${locale%%_*}" | tr '[:upper:]' '[:lower:]') ;;
   esac
+  # Pick timezone
+  best_guess_timezone=$(tzupdate -p)
+  timezone=$(timedatectl list-timezones | gum filter --selected "$best_guess_timezone" --height 10 --header "Timezone") || abort
+
 }
 
 user_form
