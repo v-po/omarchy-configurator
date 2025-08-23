@@ -128,28 +128,37 @@ user_form() {
     fi
   done
 
-  locale=$(sed '/[.@]/d; s/ .*//' /usr/share/i18n/SUPPORTED | gum choose --height 1 --selected=en_US --header "Locale/keyboard") || abort
-
-  # Set keyboard from locale
-  case "$locale" in
-  en_US) keyboard="us" ;;
-  en_GB) keyboard="gb" ;;
-  da_*) keyboard="dk" ;;
-  pt_BR) keyboard="br" ;;
-  sv_*) keyboard="se" ;;
-  no_*) keyboard="no" ;;
-  *) keyboard=$(printf '%s' "${locale%%_*}" | tr '[:upper:]' '[:lower:]') ;;
-  esac
   # Pick timezone
-  best_guess_timezone=$(tzupdate -p)
-  timezone=$(timedatectl list-timezones | gum filter --selected "$best_guess_timezone" --height 10 --header "Timezone") || abort
+  geo_guessed_timezone=$(tzupdate -p)
+  timezone=$(timedatectl list-timezones | gum choose --height 10 --selected "$geo_guessed_timezone" --header "Timezone") || abort
 
+  # Pick keyboard layout
+  keyboards=$(awk '
+  /^! layout/ {in_layout=1; next}
+  /^!/ {in_layout=0}
+  in_layout && NF {code=$1; $1=""; print substr($0,2) "|" code}
+  ' /usr/share/X11/xkb/rules/evdev.lst)
+
+  # Show only names
+  keyboard=$(
+    choice=$(printf '%s\n' "$keyboards" | cut -d'|' -f1 |
+      gum choose --height 10 --selected "English (US)" --header "Keyboard layout") || abort
+    printf '%s\n' "$keyboards" | awk -F'|' -v c="$choice" '$1==c{print $2; exit}'
+  )
 }
 
 user_form
 
 while true; do
-  echo -e "Field,Value\nUser name,$user_name\nPassword,$(printf "%${#password}s" | tr ' ' '*')\nFull name,${full_name:-[Skipped]}\nEmail address,${email_address:-[Skipped]}\nHostname,$hostname\nTimezone,$timezone\nLocale,$locale" | gum table -s "," -p
+  echo -e "Field,Value
+User name,$user_name
+Password,$(printf "%${#password}s" | tr ' ' '*')
+Full name,${full_name:-[Skipped]}
+Email address,${email_address:-[Skipped]}
+Hostname,$hostname
+Timezone,$timezone
+Keyboard,$keyboard" |
+    gum table -s "," -p
 
   echo
   if gum confirm --negative "No, change it" "Does this look right?"; then
