@@ -16,10 +16,6 @@ if ! command -v gum >/dev/null || ! command -v iwctl >/dev/null; then
   sudo pacman -Sy --noconfirm --needed gum iw
 fi
 
-if ! command -v tzupdate >/dev/null; then
-  yay -Sy --noconfirm tzupdate
-fi
-
 abort() {
   echo "${1:-Aborted installation}"
   exit 1
@@ -141,8 +137,7 @@ user_form() {
   *) keyboard=$(printf '%s' "${locale%%_*}" | tr '[:upper:]' '[:lower:]') ;;
   esac
   # Pick timezone
-  best_guess_timezone=$(tzupdate -p)
-  timezone=$(timedatectl list-timezones | gum filter --selected "$best_guess_timezone" --height 10 --header "Timezone") || abort
+  timezone=$(timedatectl list-timezones | gum filter --height 10 --header "Timezone") || abort
 
 }
 
