@@ -181,20 +181,17 @@ clear
 echo "$full_name" >user_full_name.txt
 echo "$email_address" >user_email_address.txt
 
-# Select bootloader on whether UEFI is available or not
-if [[ -d /sys/firmware/efi/efivars ]]; then
-  bootloader="systemd-boot"
-else
-  bootloader="grub"
-fi
-
-# Partition size for the whole disk: Disk size - 1GiB boot - 1MiB Start Offset - 1MiB reserve for GPT backup
 disk_size=$(lsblk -bdno SIZE "$disk")
 mib=$((1024 * 1024))
 gib=$((mib * 1024))
-disk_size_in_mib=$((disk_size / mib * mib))
-main_partition_start=$((gib + mib))
-main_partition_size=$((disk_size_in_mib - main_partition_start - mib))
+disk_size_in_mib=$((disk_size / mib * mib)) # Rounds to nearest MiB
+
+gpt_backup_reserve=$((mib))
+boot_partition_start=$((mib))
+boot_partition_size=$((2 * gib))
+
+main_partition_start=$((boot_partition_size + boot_partition_start))
+main_partition_size=$((disk_size_in_mib - main_partition_start - gpt_backup_reserve))
 
 cat <<-_EOF_ | tee user_credentials.json >/dev/null
 {
@@ -217,10 +214,14 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
     "archinstall-language": "English",
     "auth_config": {},
     "audio_config": { "audio": "pipewire" },
-    "bootloader": "$bootloader",
+    "bootloader": "Limine",
     "custom_commands": [],
     "disk_config": {
-        "btrfs_options": { "snapshot_config": null },
+        "btrfs_options": { 
+          "snapshot_config": {
+            "type": "Snapper"
+          }
+        },
         "config_type": "default_layout",
         "device_modifications": [
             {
@@ -236,13 +237,13 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
                         "obj_id": "ea21d3f2-82bb-49cc-ab5d-6f81ae94e18d",
                         "size": {
                             "sector_size": { "unit": "B", "value": 512 },
-                            "unit": "GiB",
-                            "value": 1
+                            "unit": "B",
+                            "value": $boot_partition_size
                         },
                         "start": {
                             "sector_size": { "unit": "B", "value": 512 },
-                            "unit": "MiB",
-                            "value": 1
+                            "unit": "B",
+                            "value": $boot_partition_start
                         },
                         "status": "create",
                         "type": "primary"
