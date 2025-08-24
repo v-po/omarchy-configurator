@@ -340,7 +340,10 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
     },
     "mirror_config": {
         "custom_repositories": [],
-        "custom_servers": [{"url": "https://geo.mirror.pkgbuild.com/\$repo/os/\$arch"}],
+        "custom_servers": [
+            {"url": "https://geo.mirror.pkgbuild.com/\$repo/os/\$arch"},
+            {"url": "https://mirror.rackspace.com/archlinux/\$repo/os/\$arch"}
+        ],
         "mirror_regions": {},
         "optional_repositories": []
     },
