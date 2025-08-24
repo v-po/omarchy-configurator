@@ -366,7 +366,7 @@ if [[ $1 == "dry" ]]; then
   echo -e "\n\nUser Full Name:"
   cat user_full_name.txt
 
-  echo -e "\n\nUser Email Address:"
+  echo -e "\nUser Email Address:"
   cat user_email_address.txt
 
   rm user_configuration.json user_credentials.json user_full_name.txt user_email_address.txt
