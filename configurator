@@ -171,16 +171,16 @@ done
 get_disk_info() {
   local device="$1"
   local size model
-  
+
   # Get basic disk information
   size=$(lsblk -dno SIZE "$device" 2>/dev/null)
   model=$(lsblk -dno MODEL "$device" 2>/dev/null | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-  
+
   # Format display string
   local display="$device"
   [[ -n "$size" ]] && display="$display ($size)"
   [[ -n "$model" ]] && display="$display - $model"
-  
+
   echo "$display"
 }
 
@@ -195,7 +195,7 @@ disk_form() {
       disk_options="$disk_options$disk_info"$'\n'
     fi
   done < <(lsblk -dpno NAME,TYPE | grep -E '/dev/(sd|hd|vd|nvme|mmcblk)' | awk '{print $1}')
-  
+
   selected_display=$(echo "$disk_options" | gum choose --header "Select install disk") || abort
   disk=$(echo "$selected_display" | awk '{print $1}')
 }
@@ -355,3 +355,19 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
     "version": "3.0.9"
 }
 _EOF_
+
+if [[ $1 == "dry" ]]; then
+  echo -e "User Configuration:"
+  cat user_configuration.json
+
+  echo -e "\n\nUser Credentials:"
+  cat user_credentials.json
+
+  echo -e "\n\nUser Full Name:"
+  cat user_full_name.txt
+
+  echo -e "\n\nUser Email Address:"
+  cat user_email_address.txt
+
+  rm user_configuration.json user_credentials.json user_full_name.txt user_email_address.txt
+fi
