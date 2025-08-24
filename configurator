@@ -168,11 +168,36 @@ done
 
 # STEP 3: DISK
 
-disk_form() {
-  step "Let's select where to install Omarchy..." slide
+get_disk_info() {
+  local device="$1"
+  local size model
+  
+  # Get basic disk information
+  size=$(lsblk -dno SIZE "$device" 2>/dev/null)
+  model=$(lsblk -dno MODEL "$device" 2>/dev/null | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+  
+  # Format display string
+  local display="$device"
+  [[ -n "$size" ]] && display="$display ($size)"
+  [[ -n "$model" ]] && display="$display - $model"
+  
+  echo "$display"
+}
 
-  disk=$(lsblk -dpno NAME,SIZE,TYPE | grep -E '/dev/(sd|hd|vd|nvme|mmcblk)' | awk '{print $1, $2}' | gum choose --header "Select install disk") || abort
-  disk=$(echo "$disk" | awk '{print $1}')
+disk_form() {
+  step "Let's select where to install Omarchy..."
+
+  # Get available disks and format them with info
+  local disk_options=""
+  while IFS= read -r device; do
+    if [[ -n "$device" ]]; then
+      disk_info=$(get_disk_info "$device")
+      disk_options="$disk_options$disk_info"$'\n'
+    fi
+  done < <(lsblk -dpno NAME,TYPE | grep -E '/dev/(sd|hd|vd|nvme|mmcblk)' | awk '{print $1}')
+  
+  selected_display=$(echo "$disk_options" | gum choose --header "Select install disk") || abort
+  disk=$(echo "$selected_display" | awk '{print $1}')
 }
 
 disk_form
