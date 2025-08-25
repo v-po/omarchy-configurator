@@ -348,7 +348,8 @@ cat <<-_EOF_ | tee user_configuration.json >/dev/null
         "optional_repositories": []
     },
     "packages": [
-        "base-devel"
+        "base-devel",
+        "git"
     ],
     "profile_config": {
         "gfx_driver": null,
