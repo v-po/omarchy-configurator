@@ -81,7 +81,7 @@ if [[ -z $NETWORK_NOT_NEEDED ]]; then
         fi
       done
     else
-      abort "Couldn't find any Wi-Fi networks."
+      abort "Couldn't find any Wi-Fi networks. Try manually configuring Wi-Fi with: iwctl"
     fi
   fi
 fi
