@@ -101,7 +101,7 @@ fi
 # STEP 3: USER
 
 user_form() {
-  step "Let's create your user account..."
+  step "Let's setup your user account..."
 
   while true; do
     username=$(gum input --placeholder "Alphanumeric without spaces (like dhh)" --prompt.foreground="#845DF9" --prompt "Username> ") || abort
