@@ -247,7 +247,7 @@ password_escaped=$(echo -n "$password" | jq -Rsa)
 password_hash_escaped=$(echo -n "$password_hash" | jq -Rsa)
 username_escaped=$(echo -n "$username" | jq -Rsa)
 
-cat <<-_EOF_ | tee user_credentials.json >/dev/null
+cat <<-_EOF_ >user_credentials.json
 {
     "encryption_password": $password_escaped,
     "root_enc_password": $password_hash_escaped,
