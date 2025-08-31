@@ -134,11 +134,13 @@ user_form() {
   while true; do
     hostname=$(gum input --placeholder "Alphanumeric without spaces (or return for 'omarchy')" --prompt.foreground="#845DF9" --prompt "Hostname> ")
 
-    if [[ "$hostname" =~ ^[a-Z_][a-Z0-9_-]*[$]?$ ]]; then
+    if [[ "$hostname" =~ ^[A-Za-z_][A-Za-z0-9_-]*\$?$ ]]; then
       break
-    else
+    elif [[ -z $hostname ]]; then
       hostname="omarchy"
       break
+    else
+      notice "Hostname must be alphanumeric using dashes or underscores but no spaces" 1
     fi
   done
 
