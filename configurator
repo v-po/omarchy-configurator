@@ -22,6 +22,7 @@ fi
 
 abort() {
   echo "${1:-Aborted installation}"
+  echo -e "\nYou can retry later by running: ./.automated_script.sh"
   exit 1
 }
 
