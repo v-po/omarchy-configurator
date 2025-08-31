@@ -134,7 +134,7 @@ user_form() {
   while true; do
     hostname=$(gum input --placeholder "Alphanumeric without spaces (or return for 'omarchy')" --prompt.foreground="#845DF9" --prompt "Hostname> ")
 
-    if [[ "$hostname" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
+    if [[ "$hostname" =~ ^[a-Z_][a-Z0-9_-]*[$]?$ ]]; then
       break
     else
       hostname="omarchy"
