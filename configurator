@@ -118,8 +118,10 @@ user_form() {
     password=$(gum input --placeholder "Used for user + root + encryption" --prompt.foreground="#845DF9" --password --prompt "Password> ") || abort
     password_confirmation=$(gum input --placeholder "Must match the password you just typed" --prompt.foreground="#845DF9" --password --prompt "Confirm> ") || abort
 
-    if [[ "$password" == "$password_confirmation" ]]; then
+    if [[ -n "$password" && "$password" == "$password_confirmation" ]]; then
       break
+    elif [[ -z "$password" ]]; then
+      notice "Your password can't be blank!" 1
     else
       notice "Passwords didn't match!" 1
     fi
