@@ -46,7 +46,7 @@ step() {
 
 notice() {
   clear_logo
-  gum spin --spinner "globe" --title "$1" -- sleep "${2:-2}"
+  gum spin --spinner "pulse" --title "$1" -- sleep "${2:-2}"
 }
 
 # STEP 1: KEYBOARD LAYOUT
