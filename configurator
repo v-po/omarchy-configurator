@@ -148,7 +148,7 @@ user_form() {
 
   # Pick timezone
   if command -v tzupdate >/dev/null; then
-    geo_guessed_timezone=$(tzupdate -p)
+    geo_guessed_timezone=$(tzupdate -p 2>/dev/null)
   fi
   timezone=$(timedatectl list-timezones | gum filter --height 10 --value "$geo_guessed_timezone" --header "Timezone") || abort
 }
