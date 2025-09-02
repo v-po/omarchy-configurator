@@ -34,7 +34,7 @@ working_network() {
 
 clear_logo() {
   clear
-  echo -e "$OMARCHY_LOGO\n"
+  echo -e "\033[32m$OMARCHY_LOGO\033[0m\n"
   echo
 }
 
